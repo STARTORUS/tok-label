@@ -165,3 +165,17 @@ toklabel.import_prediction(project_name = 'demo_project', predictor = demo_predi
 # 创建并同步本地Redis储存
 storage = toklabel.create_storage(ls, project_id = proj.id, project_name = 'demo_project')
 ```
+
+
+示例1：放电特征时间项目
+包含几个功能：
+1. 输入炮号自动生成数据并导入label studio，以下三个时序数据。
+2. 模型自动预测三个特征时间（击穿、破裂、结束），给人工标注提供参考。
+3. 自动根据人工标注的结果进行模型训练。
+
+![示例1：放电特征时间项目](docs/imgs/example1.png)
+
+示例二：基于可见光的等离子体位形标注
+根据等离子体位形参数进行最外闭合磁面的标注
+
+![示例2：等离子体位形标注](docs/imgs/example2.png)
