@@ -103,7 +103,7 @@ Label Studio 的时间序列数据标注项目需要根据 csv 的表头和标�
 
 为了方便使用，将 Label-Studio-sdk 的创建项目函数封装进 toklabel 中，可以单独接收 xml_config 或者 name_table_columns 与 label_table_columns 来创建项目。该链接（[https://api.labelstud.io/api-reference/api-reference/projects/create](https://api.labelstud.io/api-reference/api-reference/projects/create)）详细介绍了 sdk 提供的创建项目函数的更多输入参数以及返回结果。
 
-## 使用示例
+使用示例
 
 ```python
 import toklabel
@@ -157,7 +157,7 @@ Label Studio 支持直接读取原始数据文件(如 csv )或读取包含元数
 
 同步Redis储存后，如果需要向该项目中加入新的数据，可以直接使用原有的Redis储存。Label Studio不会将完全相同的数据导入两遍。
 
-toklabel使用例
+toklabel使用示例
 
 ```python
 # 可选，创建predictions
@@ -166,7 +166,7 @@ toklabel.import_prediction(project_name = 'demo_project', predictor = demo_predi
 storage = toklabel.create_storage(ls, project_id = proj.id, project_name = 'demo_project')
 ```
 
-
+## 使用示例
 示例1：放电特征时间项目
 包含几个功能：
 1. 输入炮号自动生成数据并导入label studio，以下三个时序数据。
