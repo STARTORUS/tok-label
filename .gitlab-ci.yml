@@ -1,0 +1,154 @@
+# This file is a template, and might need editing before it works on your project.
+# This is a sample GitLab CI/CD configuration file that should run without any modifications.
+# It demonstrates a basic 3 stage CI/CD pipeline. Instead of real tests or scripts,
+# it uses echo commands to simulate the pipeline execution.
+#
+# A pipeline is composed of independent jobs that run scripts, grouped into stages.
+# Stages run in sequential order, but jobs within stages run in parallel.
+#
+# For more information, see: https://docs.gitlab.com/ee/ci/yaml/index.html#stages
+#
+# You can copy and paste this template into a new `.gitlab-ci.yml` file.
+# You should not add this template to an existing `.gitlab-ci.yml` file by using the `include:` keyword.
+#
+# To contribute improvements to CI/CD templates, please follow the Development guide at:
+# https://docs.gitlab.com/ee/development/cicd/templates.html
+# This specific template is located at:
+# https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Getting-Started.gitlab-ci.yml
+variables:
+  DOCKER_HUB_URL: gitlab.startorus.org:5050
+  CONTAINER_REGISTRY: $DOCKER_HUB_URL/scientific-computing/toklabel
+  IMAGE_TAG: latest
+  IMAGE_NAME_FILE_SERVER: $CONTAINER_REGISTRY/file-server
+  IMAGE_NAME_FRAME_EXTRACTOR: $CONTAINER_REGISTRY/frame-extractor
+  IMAGE_NAME_ML_BACKEND: $CONTAINER_REGISTRY/ml-backend
+  IMAGE_NAME_TOKLABEL: $CONTAINER_REGISTRY/toklabel
+  GITLAB_API_URL: "https://gitlab.startorus.org/api/v4"
+  PROJECT_ID: $CI_PROJECT_ID
+
+
+stages:          # List of stages for jobs, and their order of execution
+  - build
+
+build-file-server:       
+  stage: build
+  image: docker:24.0.5
+  services: 
+    - docker:24.0.5-dind
+  variables:
+    DOCKER_TLS_CERTDIR: ""
+  before_script:
+    - cd file-server
+    - docker login -u $REGISTRY_USER -p $REGISTRY_PASSWORD $DOCKER_HUB_URL
+  script:
+    - echo "After script execution..."
+    - |
+      docker build --no-cache -f Dockerfile -t $IMAGE_NAME_FILE_SERVER:$IMAGE_TAG .
+      docker push $IMAGE_NAME_FILE_SERVER:$IMAGE_TAG
+  # manual trigger
+  when: manual
+
+build-frame-extractor:       
+  stage: build
+  image: docker:24.0.5
+  services: 
+    - docker:24.0.5-dind
+  variables:
+    DOCKER_TLS_CERTDIR: ""
+  before_script:
+    - cd frame-extractor
+    - docker login -u $REGISTRY_USER -p $REGISTRY_PASSWORD $DOCKER_HUB_URL
+  script:
+    - echo "After script execution..."
+    - |
+      docker build --no-cache -f Dockerfile -t $IMAGE_NAME_FRAME_EXTRACTOR:$IMAGE_TAG .
+      docker push $IMAGE_NAME_FRAME_EXTRACTOR:$IMAGE_TAG
+  # manual trigger
+  when: manual
+
+build-ml-backend:
+  stage: build
+  image: docker:24.0.5
+  services: 
+    - docker:24.0.5-dind
+  variables:
+    DOCKER_TLS_CERTDIR: ""
+  before_script:
+    - cd ml-backends/$model_name
+    - docker login -u $REGISTRY_USER -p $REGISTRY_PASSWORD $DOCKER_HUB_URL
+  script:
+    - echo "After script execution..."
+    - |
+      docker build --no-cache -f Dockerfile -t $IMAGE_NAME_ML_BACKEND/$model_name:$IMAGE_TAG .
+      docker push $IMAGE_NAME_ML_BACKEND/$model_name:$IMAGE_TAG
+
+  parallel:
+    matrix:
+      - model_name: discharge_timing_features
+    
+  # manual trigger
+  when: manual
+
+# build-toklabel:
+#   stage: build
+#   image: docker:24.0.5
+#   services: 
+#     - docker:24.0.5-dind
+#   variables:
+#     DOCKER_TLS_CERTDIR: ""
+#   # before_script:
+#   #   - docker login -u $REGISTRY_USER -p $REGISTRY_PASSWORD $DOCKER_HUB_URL
+#   script:
+#     - echo "After script execution..."
+#     - docker login -u luoyh15 -p docker1314
+#     - docker build --no-cache -t $IMAGE_NAME_TOKLABEL:$IMAGE_TAG .
+#     - docker login -u $REGISTRY_USER -p $REGISTRY_PASSWORD $DOCKER_HUB_URL
+#     - docker push $IMAGE_NAME_TOKLABEL:$IMAGE_TAG
+
+build_toklabel_package:
+  stage: build
+  image: python:3.10
+  variables:
+    PACKAGE_NAME: "toklabel"
+    PACKAGE_VERSION: "0.2.0" 
+
+  before_script:
+    - apt-get update -qq && apt-get install -y jq
+    - pip install -U pip build twine  
+  script:
+    # 删除所有同版本 package
+    - |
+      echo "Fetching packages of version $PACKAGE_VERSION..."
+      curl -s --header "PRIVATE-TOKEN: $UPLOAD_TOKEN" \
+        "$GITLAB_API_URL/projects/$CI_PROJECT_ID/packages?package_name=$PACKAGE_NAME&package_version=$PACKAGE_VERSION&per_page=100" \
+      | jq -r '.[].id' \
+      | while read -r ID; do
+          echo "   delete id=$ID"
+          curl -s -X DELETE --header "PRIVATE-TOKEN: $UPLOAD_TOKEN" \
+               "$GITLAB_API_URL/projects/$CI_PROJECT_ID/packages/$ID"
+        done
+    - |    
+      echo "Deleting packages older than $PACKAGE_VERSION..."
+      curl -s --header "PRIVATE-TOKEN: $UPLOAD_TOKEN" \
+        "$GITLAB_API_URL/projects/$CI_PROJECT_ID/packages?package_name=$PACKAGE_NAME&per_page=100" \
+      | jq -r --arg v "$PACKAGE_VERSION" '.[] | select(.version != $v) | .id' \
+      | while read -r ID; do
+          echo "   delete id=$ID"
+          curl -s -X DELETE --header "PRIVATE-TOKEN: $UPLOAD_TOKEN" \
+               "$GITLAB_API_URL/projects/$CI_PROJECT_ID/packages/$ID"
+        done
+    - rm -rf dist
+    # 动态生成 .pypirc
+    - echo "[distutils]" >> ~/.pypirc
+    - echo "index-servers =" >> ~/.pypirc
+    - echo "    gitlab" >> ~/.pypirc
+    - echo "" >> ~/.pypirc
+    - echo "[gitlab]" >> ~/.pypirc
+    - echo "repository = https://gitlab.startorus.org/api/v4/projects/scientific-computing%2Ftoklabel/packages/pypi" >> ~/.pypirc
+    - echo "username = ${TWINE_USERNAME}" >> ~/.pypirc
+    - echo "password = ${TWINE_PASSWORD}" >> ~/.pypirc
+    - python -m build  # 构建包
+    - python -m twine upload --repository gitlab --verbose dist/*  # 上传包
+
+  when: manual
+

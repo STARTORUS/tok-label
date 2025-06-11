@@ -1,0 +1,22 @@
+# demo project config
+
+name: demo_project
+data:
+  source: pgsql
+  name_table_columns:
+      ammeter: ["ammeter", ["CS1", "PFP1"]]
+      flux_loop: ["flux_loop", [1, 2, 8]]
+
+  t_min: 0.0
+  t_max: 1.0
+  resolution: 0.001
+
+label:
+  label1:
+    - effective
+  label2:
+    - stable
+    - unstable
+    - disruptive
+
+

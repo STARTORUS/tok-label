@@ -1,0 +1,72 @@
+# 创建Label Studio项目的配置文件
+# --------------项目配置部分-----------------------
+# 项目名称
+project: features_test
+# 可选，对项目的描述
+project_description: ''
+# 如果该项目已创建，请填写项目id，否则保持为空(null)
+project_id: 37
+# 项目数据类型,'Timeseries'(时序数据)或者'Image'(图像数据)
+project_data_type: 'Timeseries'
+# --------------通用数据部分-------------------
+# 需要的炮号，支持int(单炮)，List(炮号列表)，Dict(炮号最大值和最小值)
+shots:
+  min: 240829001
+  max: 240829004
+# 读取数据的最小起始时间和最大结束时间      
+t_min: 0
+t_max: 2
+# 时间分辨率，以秒为单位，默认1e-4
+resolution: 0.0001
+# 导出数据在服务器中的存储路径,为空则与project相同
+file_path: null  
+# --------------时序数据部分-------------------
+# 原始数据格式。注意，之后处理后的数据使用的原始数据通道也应该包含在其中
+raw_data:
+  ip0:
+    data_table_name: rogowski
+    channels:
+      - of1
+  ip_eddy:
+    data_table_name: rogowski_eddy
+    channels:
+      - of1
+  flux_loop:
+    data_table_name: flux_loop
+    channels:
+      - 1
+      - 2
+      - 3
+# 处理数据及其表达式
+# name为新数据的名称，不能和raw_data中的数据名相同
+# expression为处理数据的表达式，目前仅支持四则运算
+# 注意：表达式的计算符号应该使用SQL格式，其中涉及的数据必须在raw_data出现过，且使用 data_name[channel_name] 的格式
+processed_data:
+  - name: ip
+    expression: 'ip0[of1]-ip_eddy[of1]'
+  - name: test_data
+    expression: '3*(flux_loop[1]+flux_loop[3])'
+# 是否保留使用过的原始数据，若为true，最后上传到项目的数据会包括在processed_data中使用过的数据。默认为false    
+keep_used_raw_data: false
+# 是否将所有数据保存在视图中。若为true，创建的视图会包括所有数据，否则只包括processed_data。默认为false
+including_raw_data: false
+# 筛选符合要求的数据，目前只支持max(...) < value, max(...) > value, min(...) < value, min(...) > value
+filter:
+  - max(ip)>100e3
+# -----------------图像数据部分--------------------------
+# 是否使用SAM2进行辅助标注，这将影响到标注界面的内容和风格
+using_SAM2: true
+# 是否使用时序数据内容帮助筛选放电炮号
+using_TimeSeries_filter: false  
+# -----------------标签配置部分--------------------------  
+# 项目标签配置
+label_config:
+  - name: ip_time
+    type: TimeSeriesLabels
+    choices:
+      - time  
+  - name: unstable
+    type: TimeSeriesLabels
+    choices:
+      - min
+      - large

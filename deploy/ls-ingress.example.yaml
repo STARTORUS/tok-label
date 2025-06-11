@@ -1,0 +1,26 @@
+# ingress for label-studio
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: label-studio-ingress
+  namespace: label-studio
+  labels:
+    app.kubernetes.io/name: label-studio-ingress
+  annotations: {}
+    # nginx.ingress.kubernetes.io/rewrite-target: /$2
+    # nginx.ingress.kubernetes.io/use-regex: "true"
+
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: <YOUR_HOST>  # 修改为你的主机名
+      http:
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: label-studio-ls-app
+                port:
+                  number: 80 

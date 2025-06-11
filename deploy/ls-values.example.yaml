@@ -1,0 +1,155 @@
+# Default values for Label Studio.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+global:
+  # Image pull secret to use for registry authentication.
+  imagePullSecrets: []
+
+  image:
+    registry: docker.io
+    repository: heartexlabs/label-studio
+    pullPolicy: IfNotPresent
+    tag: ""
+
+  pgConfig:
+    host: "<DB_HOST>"
+    port: <DB_PORT>
+    dbName: "<DB_NAME>"
+    userName: "<DB_USER>"
+    password:
+      secretName: "postgres-secret"
+      secretKey: "ENV_PG_PASSWORD"
+    ssl:
+      pgSslMode: ""
+      pgSslSecretName: ""
+      pgSslRootCertSecretKey: ""
+      pgSslCertSecretKey: ""
+      pgSslKeySecretKey: ""
+
+  # Redis location, for example redis://[:password]@localhost:6379/1
+  redisConfig:
+    host: "<REDIS_HOST>"
+    password:
+      secretName: "toklabel"
+      secretKey: "redis-password"
+    ssl:
+      redisSslCertReqs: ""
+      redisSslSecretName: ""
+      redisSslCaCertsSecretKey: ""
+      redisSslCertFileSecretKey: ""
+      redisSslKeyFileSecretKey: ""
+
+  extraEnvironmentVars: {}
+
+  extraEnvironmentSecrets: {}
+
+  persistence:
+    enabled: true
+    type: volume
+    config:
+      volume:
+        storageClass: ""
+        size: 10Gi
+        accessModes:
+          - ReadWriteOnce
+        annotations: {}
+        existingClaim: "label-studio-ls-pvc"
+        resourcePolicy: ""
+
+  featureFlags: {}
+
+app:
+  deploymentStrategy:
+    type: RollingUpdate
+
+  deploymentAnnotations: {}
+  
+  replicas: 1
+
+  NameOverride: ""
+  FullnameOverride: ""
+  labels: {}
+  podLabels: {}
+
+  args:
+    - "label-studio-uwsgi"
+
+  resources:
+    requests:
+      memory: "600Mi"
+      cpu: "250m"
+    limits:
+      memory: "4000Mi"
+      cpu: "4"
+
+  nginx:
+    args:
+      - "nginx"
+    extraEnvironmentVars: {}
+    extraEnvironmentSecrets: {}
+    resources:
+      requests:
+        memory: "384Mi"
+        cpu: "250m"
+      limits:
+        memory: "1G"
+        cpu: "1000m"
+    livenessProbe:
+      enabled: true
+      path: "/nginx_health"
+      failureThreshold: 2
+      initialDelaySeconds: 60
+      periodSeconds: 5
+      successThreshold: 1
+      timeoutSeconds: 3
+    readinessProbe:
+      enabled: true
+      path: "/version"
+      failureThreshold: 2
+      initialDelaySeconds: 60
+      periodSeconds: 10
+      successThreshold: 1
+      timeoutSeconds: 5
+      scheme: "HTTP"
+
+  extraEnvironmentVars: {}
+  extraEnvironmentSecrets: {}
+
+  nodeSelector: {}
+
+  topologySpreadConstraints: []
+
+  dnsPolicy: "ClusterFirst"
+
+  enableServiceLinks: false
+
+  shareProcessNamespace: false
+
+  automountServiceAccountToken: true
+
+  annotations: {}
+
+  extraLabels: {}
+
+  affinity: {}
+
+  tolerations: []
+
+  readinessProbe:
+    enabled: false
+    path: /version
+    failureThreshold: 2
+    initialDelaySeconds: 60
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 5
+
+  livenessProbe:
+    enabled: true
+    path: /version
+    failureThreshold: 2
+    initialDelaySeconds: 60
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 5 

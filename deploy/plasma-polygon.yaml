@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ml-backend-plasma-polygon
+  namespace: label-studio
+  labels:
+    app: ml-backend-plasma-polygon
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ml-backend-plasma-polygon
+  template:
+    metadata:
+      labels:
+        app: ml-backend-plasma-polygon
+    spec:
+      containers:
+      - name: ml-backend-plasma-polygon
+        image: gitlab.startorus.org:5050/scientific-computing/toklabel/ml-backend/plasma_polygon:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 9090
+        env:
+        - name: LABEL_STUDIO_URL
+          value: http://dap0.lan:30400/
+        - name: LABEL_STUDIO_API_KEY
+          value: 38a01914af46739b407df55d544f6cb9e7b8c8a6
+        - name: MODEL_PATH
+          value: /data/model.pth
+        volumeMounts:
+        - name: data-volume
+          mountPath: /data
+        - name: huggingface-cache-volume
+          mountPath: /root/.cache/huggingface/hub
+        resources:
+          limits:
+            memory: "4096Mi"
+            cpu: "2000m"
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+      volumes:
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: ml-backend-plasma-polygon-pvc
+      - name: huggingface-cache-volume
+        persistentVolumeClaim:
+          claimName: huggingface-cache-pvc
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ml-backend-plasma-polygon
+  namespace: label-studio
+  labels:
+    app: ml-backend-plasma-polygon
+spec:
+  ports:
+  - port: 9090
+    targetPort: 9090
+  selector:
+    app: ml-backend-plasma-polygon
+
+
+
+# ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ml-backend-plasma-polygon
+  namespace: label-studio
+  labels:
+    app: ml-backend-plasma-polygon
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: dap0.lan
+    http:
+      paths:
+        - path: /ml-backend-plasma-polygon(/|$)(.*)
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: ml-backend-plasma-polygon
+              port:
+                number: 9090

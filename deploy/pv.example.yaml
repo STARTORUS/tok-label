@@ -1,0 +1,213 @@
+---
+# pvc for label-studio
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: label-studio-ls-pvc
+  namespace: label-studio
+  labels:
+    app.kubernetes.io/name: ls-pvc
+spec:
+  storageClassName: ""
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: "10Gi"
+
+---
+# pv for label-studio
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: label-studio-pv
+  labels:
+    app.kubernetes.io/name: ls-pvc
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  local:
+    path: /mnt/data/label-studio
+  claimRef:
+    name: label-studio-ls-pvc
+    namespace: label-studio
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - <NODE_NAME>
+
+---
+# pvc for file-server
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ls-file-server-pvc
+  namespace: label-studio
+spec:
+  storageClassName: ""
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+
+---
+# pv for file-server
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: ls-file-server-pv
+  labels:
+    app.kubernetes.io/name: ls-file-server-pvc
+spec:
+  capacity:
+    storage: 50Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  claimRef:
+    name: ls-file-server-pvc
+    namespace: label-studio
+  storageClassName: ""
+  local:
+    path: /mnt/data/ls-file-server
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - <NODE_NAME>
+
+---
+# pvc for redis
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-pvc
+  namespace: label-studio
+spec:
+  storageClassName: ""
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+
+---
+# pv for redis
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: redis-pv
+  labels:
+    app.kubernetes.io/name: redis-pvc
+spec:
+  capacity:
+    storage: 50Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  local:
+    path: /mnt/data/redis
+  claimRef:
+    name: redis-pvc
+    namespace: label-studio
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - <NODE_NAME>
+
+---
+# pvc for store huggingface cache
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: huggingface-cache-pvc
+  namespace: label-studio
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: ""
+  volumeName: huggingface-cache-pv
+
+---
+# pv for store huggingface cache
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: huggingface-cache-pv
+spec:
+  capacity:
+    storage: 50Gi
+  accessModes: [ReadWriteOnce]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  hostPath:
+    path: /mnt/data/huggingface-cache
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values: ["<GPU_NODE_NAME>"]
+  claimRef:
+    name: huggingface-cache-pvc
+    namespace: label-studio
+
+---
+# pvc for ml-backend-SAM2-image
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ml-backend-sam2-image-pvc
+  namespace: label-studio
+spec:
+  storageClassName: ""
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: "10Gi"
+
+---
+# pv for ml-backend-SAM2-image
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: ml-backend-sam2-image-pv
+spec:
+  capacity:
+    storage: 35Gi
+  accessModes: [ReadWriteOnce]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  hostPath:
+    path: /mnt/data/ml-backend/SAM2-image
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values: ["<GPU_NODE_NAME>"] 

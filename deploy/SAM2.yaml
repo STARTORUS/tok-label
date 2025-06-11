@@ -1,0 +1,100 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ml-backend-sam2-image
+  namespace: label-studio
+  labels:
+    app: ml-backend-sam2-image
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ml-backend-sam2-image
+  template:
+    metadata:
+      labels:
+        app: ml-backend-sam2-image
+    spec:
+      # 如果集群已安装 NVIDIA Device Plugin，可直接加 gpu limits
+      containers:
+      - name: ml-backend-sam2-image
+        image: gitlab.startorus.org:5050/scientific-computing/toklabel/ml-backend/sam2-image:latest 
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 9090
+        env:
+        # Label Studio 连接信息
+        - name: LABEL_STUDIO_URL
+          value: "http://dap0.lan:30400/"
+        - name: LABEL_STUDIO_API_KEY
+          value: "db485b6a000c60c389e4ba942b3827b120e3d4cb"
+        # SAM2 运行参数（与 docker‑compose 保持一致）
+        - name: DEVICE                # cuda / cpu
+          value: "cuda"
+        - name: MODEL_CONFIG
+          value: "configs/sam2.1/sam2.1_hiera_l.yaml"
+        - name: MODEL_CHECKPOINT
+          value: "sam2.1_hiera_large.pt"
+        - name: LOG_LEVEL
+          value: "INFO"
+        # workers / threads 可按需添加
+        volumeMounts:
+        - name: data-volume           # 保存上传模型、日志等
+          mountPath: /data
+        - name: huggingface-cache-volume       # HuggingFace 权重缓存
+          mountPath: /root/.cache/huggingface/hub
+        resources:
+          limits:
+            memory: "6144Mi"
+            cpu: "3000m"
+            nvidia.com/gpu: 1          # SAM2必需使用GPU
+          requests:
+            memory: "1024Mi"
+            cpu: "500m"
+      volumes:
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: ml-backend-sam2-image-pvc
+      - name: huggingface-cache-volume
+        persistentVolumeClaim:
+          claimName: huggingface-cache-pvc   # 与 ip_features 共用
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ml-backend-sam2-image
+  namespace: label-studio
+  labels:
+    app: ml-backend-sam2-image
+spec:
+  ports:
+  - port: 9090
+    targetPort: 9090
+  selector:
+    app: ml-backend-sam2-image
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ml-backend-sam2-image
+  namespace: label-studio
+  labels:
+    app: ml-backend-sam2-image
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: dap0.lan
+    http:
+      paths:
+      - path: /ml-backend-sam2-image(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: ml-backend-sam2-image
+            port:
+              number: 9090

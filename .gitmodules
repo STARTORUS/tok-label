@@ -1,0 +1,3 @@
+[submodule "ml-models"]
+	path = ml-models
+	url = git@gitlab.startorus.org:scientific-computing/ml-models.git

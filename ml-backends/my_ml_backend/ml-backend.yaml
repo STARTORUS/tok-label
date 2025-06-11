@@ -1,0 +1,63 @@
+# 部署(Deployment)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ml-backend-deployment
+  namespace: label-studio
+
+  labels:
+    app: ml-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ml-backend
+  template:
+    metadata:
+      labels:
+        app: ml-backend
+    spec:
+      nodeName: dap0
+      containers:
+      - name: ml-backend
+        image: docker.io/cosmosheep/my-ml-backend:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+          - containerPort: 9090
+        env:
+          # 这里可以注入环境变量，比如 LABEL_STUDIO_URL, LABEL_STUDIO_API_KEY 等
+          - name: LOG_LEVEL
+            value: "DEBUG"
+          - name: LABEL_STUDIO_URL
+            value: "http://dap0.lan:30400"
+          - name: LABEL_STUDIO_API_KEY
+            value: "db485b6a000c60c389e4ba942b3827b120e3d4cb"
+          # specify the number of workers and threads for the model server
+          - name: WORKERS
+            value: "1"
+          - name: THREADS
+            value: "8"
+          # specify the model directory (likely you don't need to change this)
+          - name: MODEL_DIR
+            value: "/data/models"  
+
+---
+# 服务(Service)
+apiVersion: v1
+kind: Service
+metadata:
+  name: ml-backend-service
+  labels:
+    app: ml-backend
+spec:
+  # 将 ClusterIP 改为 NodePort
+  type: NodePort
+  selector:
+    app: ml-backend
+  ports:
+    - port: 9090
+      targetPort: 9090
+      protocol: TCP
+      name: http
+      # (可选) 指定 nodePort 为 30090, 不写则自动分配
+      nodePort: 30090

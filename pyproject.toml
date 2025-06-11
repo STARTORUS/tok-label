@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+namespaces = false
+
+
+[project]
+name = "toklabel"
+version = "0.2.0"
+dynamic = ["dependencies"]
+requires-python = ">= 3.10"
+description = "label utils for startorus projects"
+authors = [
+    {name = "scientific computing team", email = "luoyuhang@startorus.com"}
+]
+readme = "README.md"
+
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements-base.txt"]}

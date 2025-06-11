@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frame-extractor
+  namespace: label-studio
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: frame-extractor }
+  template:
+    metadata:
+      labels: { app: frame-extractor }
+    spec:
+      containers:
+      - name: frame-extractor
+        image: gitlab.startorus.org:5050/scientific-computing/toklabel/frame-extractor:latest
+        imagePullPolicy: Always
+        ports:
+          - containerPort: 8000
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
+          limits:
+            cpu: "2"
+            memory: "2Gi"
+        volumeMounts:
+          - name: data-volume
+            mountPath: /data          # 共享 PVC，与 ls‑file‑server 相同
+      volumes:
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: ls-file-server-pvc   # 已存在的 PVC
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: frame-extractor-service
+  namespace: label-studio
+spec:
+  selector:
+    app: frame-extractor
+  type: NodePort            
+  ports:
+    - port: 8000
+      targetPort: 8000
+      nodePort: 30423  

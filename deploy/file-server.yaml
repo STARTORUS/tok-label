@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ls-file-server
+  namespace: label-studio
+  labels:
+    app: ls-file-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ls-file-server
+  template:
+    metadata:
+      labels:
+        app: ls-file-server
+    spec:
+      containers:
+      - name: ls-file-server
+        image: gitlab.startorus.org:5050/scientific-computing/toklabel/file-server:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+        volumeMounts:
+        - name: data-volume
+          mountPath: /data
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+      volumes:
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: ls-file-server-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ls-file-server-service
+  namespace: label-studio
+spec:
+  type: NodePort
+  selector:
+    app: ls-file-server
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+      nodePort: 30422
+
+
+

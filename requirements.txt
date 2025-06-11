@@ -1,0 +1,9 @@
+--extra-index-url https://__token__:glpat-yvctg1n6my-YiycJbf6g@gitlab.startorus.org/api/v4/projects/scientific-computing%2Ftokamak-simulation-framework/packages/pypi/simple
+tokpy
+redis
+pandas
+requests
+label-studio-sdk
+numpy
+pytz
+python-dotenv

@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ml-backend-discharge-timing-features
+  namespace: label-studio
+  labels:
+    app: ml-backend-discharge-timing-features
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ml-backend-discharge-timing-features
+  template:
+    metadata:
+      labels:
+        app: ml-backend-discharge-timing-features
+    spec:
+      containers:
+      - name: ml-backend-discharge-timing-features
+        image: gitlab.startorus.org:5050/scientific-computing/toklabel/ml-backend/discharge_timing_features:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 9090
+        env:
+        - name: LABEL_STUDIO_URL
+          valueFrom:
+            secretKeyRef:
+              name: toklabel
+              key: label-studio-url
+        - name: LABEL_STUDIO_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: toklabel
+              key: label-studio-api-key
+        - name: MODEL_URL
+          valueFrom:
+            secretKeyRef:
+              name: toklabel
+              key: discharge-timing-model-url
+        resources:
+          limits:
+            memory: "4096Mi"
+            cpu: "2000m"
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ml-backend-discharge-timing-features
+  namespace: label-studio
+  labels:
+    app: ml-backend-discharge-timing-features
+spec:
+  ports:
+  - port: 9090
+    targetPort: 9090
+  selector:
+    app: ml-backend-discharge-timing-features
+
+
+
+# ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ml-backend-discharge-timing-features
+  namespace: label-studio
+  labels:
+    app: ml-backend-discharge-timing-features
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: dap0.lan
+    http:
+      paths:
+        - path: /ml-backend-discharge-timing-features(/|$)(.*)
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: ml-backend-discharge-timing-features
+              port:
+                number: 9090

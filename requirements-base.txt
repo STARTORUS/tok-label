@@ -1,0 +1,8 @@
+tokpy
+redis
+pandas
+requests
+label-studio-sdk
+numpy
+pytz
+python-dotenv
