@@ -103,7 +103,7 @@ Label Studio 的时间序列数据标注项目需要根据 csv 的表头和标�
 
 为了方便使用，将 Label-Studio-sdk 的创建项目函数封装进 toklabel 中，可以单独接收 xml_config 或者 name_table_columns 与 label_table_columns 来创建项目。该链接（[https://api.labelstud.io/api-reference/api-reference/projects/create](https://api.labelstud.io/api-reference/api-reference/projects/create)）详细介绍了 sdk 提供的创建项目函数的更多输入参数以及返回结果。
 
-使用例
+## 使用示例
 
 ```python
 import toklabel
